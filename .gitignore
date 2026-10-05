@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python cache
+.pytest_cache/
+
+# Trained ML models
+*.pkl
+*.joblib
+
+# Dataset - do NOT push to GitHub
+ml-service/data/raw/*
+ml-service/data/clean/*
+
+# Environment variables / secrets
+.env
+.env.*
+
+# Node.js
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
