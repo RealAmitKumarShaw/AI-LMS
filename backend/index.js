@@ -1,6 +1,8 @@
-
+const connectDB = require("./config/db");
 const express = require("express");
 const cors = require("cors");
+const axios = require("axios");
+const Prediction = require("./models/Prediction");
 require("dotenv").config();
 
 const app = express();
@@ -18,18 +20,33 @@ app.get("/", (req, res) => {
     });
 });
 
-/* Student Prediction Route */
+// Student Prediction Route
 app.post("/api/predict", async (req, res) => {
     try {
-        const response = await require("axios").post(
+        // Call ML API
+        const response = await axios.post(
             "http://127.0.0.1:8000/predict",
             req.body
         );
 
-        res.json(response.data);
+        // Save prediction in MongoDB
+        const predictionRecord = new Prediction({
+            studentData: req.body,
+            predictedGrade: response.data.predicted_grade,
+            probabilities: response.data.probabilities
+        });
+
+        await predictionRecord.save();
+
+        // Return prediction result
+        res.json({
+            ...response.data,
+            saved: true,
+            predictionId: predictionRecord._id
+        });
     } catch (error) {
         console.error(
-            "ML Prediction Error:",
+            "Prediction Error:",
             error.response?.data || error.message
         );
 
@@ -40,7 +57,13 @@ app.post("/api/predict", async (req, res) => {
     }
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
-});
+// Start server after database connection
+const startServer = async () => {
+    await connectDB();
+
+    app.listen(PORT, () => {
+        console.log(`Backend server running on http://localhost:${PORT}`);
+    });
+};
+
+startServer();
