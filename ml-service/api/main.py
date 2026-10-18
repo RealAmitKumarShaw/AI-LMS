@@ -55,6 +55,7 @@ def home():
         "status": "success"
     }
 
+
 @app.post("/predict")
 def predict_student(student: StudentData):
     try:
@@ -83,9 +84,35 @@ def predict_student(student: StudentData):
             for grade, probability in zip(model.classes_, probabilities)
         }
 
+        # Get the highest estimated class probability
+        highest_probability = max(grade_probabilities.values())
+
+        # Explain the probability without claiming actual accuracy
+        if highest_probability >= 80:
+            confidence_level = "High"
+            confidence_message = (
+                "The model assigns a relatively high probability "
+                "to its predicted grade."
+            )
+        elif highest_probability >= 60:
+            confidence_level = "Moderate"
+            confidence_message = (
+                "The model favors its predicted grade, "
+                "but some uncertainty remains."
+            )
+        else:
+            confidence_level = "Low"
+            confidence_message = (
+                "The model's predicted grade is uncertain because "
+                "the highest class probability is relatively low."
+            )
+
         return {
             "predicted_grade": int(prediction),
-            "probabilities": grade_probabilities
+            "probabilities": grade_probabilities,
+            "confidence": round(highest_probability, 2),
+            "confidence_level": confidence_level,
+            "confidence_message": confidence_message
         }
 
     except Exception as error:
