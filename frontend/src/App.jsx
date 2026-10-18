@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import "./App.css";
 
@@ -31,9 +30,7 @@ function App() {
 
   const fetchPredictions = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/predictions"
-      );
+      const response = await fetch("http://localhost:5000/api/predictions");
 
       if (!response.ok) {
         throw new Error("Failed to fetch prediction history");
@@ -72,7 +69,7 @@ function App() {
     setResult(null);
 
     const emptyField = Object.entries(formData).find(
-      ([, value]) => value === ""
+      ([, value]) => value === "",
     );
 
     if (emptyField) {
@@ -82,29 +79,25 @@ function App() {
     }
 
     const studentData = Object.fromEntries(
-      Object.entries(formData).map(([key, value]) => [
-        key,
-        Number(value),
-      ])
+      Object.entries(formData).map(([key, value]) => [key, Number(value)]),
     );
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/predict",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(studentData),
-        }
-      );
+      const response = await fetch("http://localhost:5000/api/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(studentData),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.message || "Prediction failed. Please check your inputs."
+          data.message ||
+            data.detail ||
+            "Prediction failed. Please check your inputs.",
         );
       }
 
@@ -143,6 +136,7 @@ function App() {
         <h2>{activeTab}</h2>
         <p>Welcome to your AI-powered student performance dashboard.</p>
 
+        {/* OVERVIEW */}
         {activeTab === "Overview" && (
           <>
             {loading && <p>Loading dashboard data...</p>}
@@ -180,15 +174,13 @@ function App() {
           </>
         )}
 
+        {/* PREDICT */}
         {activeTab === "Predict" && (
           <div className="prediction-form-card">
             <h3>Student Performance Prediction</h3>
             <p>Enter the student's details to predict performance.</p>
 
-            <form
-              className="prediction-form"
-              onSubmit={handlePrediction}
-            >
+            <form className="prediction-form" onSubmit={handlePrediction}>
               <div className="form-grid">
                 <div className="form-group">
                   <label htmlFor="StudyHours">Study Hours</label>
@@ -272,6 +264,7 @@ function App() {
                     name="Resources"
                     value={formData.Resources}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="0">Low</option>
                     <option value="1">Medium</option>
@@ -288,6 +281,7 @@ function App() {
                     name="Extracurricular"
                     value={formData.Extracurricular}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="0">No</option>
                     <option value="1">Yes</option>
@@ -301,6 +295,7 @@ function App() {
                     name="Motivation"
                     value={formData.Motivation}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="0">Low</option>
                     <option value="1">Medium</option>
@@ -315,6 +310,7 @@ function App() {
                     name="Internet"
                     value={formData.Internet}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="0">No</option>
                     <option value="1">Yes</option>
@@ -328,64 +324,76 @@ function App() {
                     name="Gender"
                     value={formData.Gender}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="0">Category 0</option>
                     <option value="1">Category 1</option>
                   </select>
                 </div>
 
+                {/* Learning Style dropdown */}
                 <div className="form-group">
                   <label htmlFor="LearningStyle">Learning Style</label>
-                  <input
+                  <select
                     id="LearningStyle"
-                    type="number"
                     name="LearningStyle"
-                    min="0"
                     value={formData.LearningStyle}
                     onChange={handleInputChange}
                     required
-                  />
+                  >
+                    <option value="">Select Learning Style</option>
+                    <option value="0">Category 0</option>
+                    <option value="1">Category 1</option>
+                    <option value="2">Category 2</option>
+                    <option value="3">Category 3</option>
+                  </select>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="Discussions">
-                    Discussions Participation
-                  </label>
+                  <label htmlFor="Discussions">Discussions Participation</label>
                   <select
                     id="Discussions"
                     name="Discussions"
                     value={formData.Discussions}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="0">No</option>
                     <option value="1">Yes</option>
                   </select>
                 </div>
 
+                {/* Educational Technology dropdown */}
                 <div className="form-group">
                   <label htmlFor="EduTech">Educational Technology</label>
-                  <input
+                  <select
                     id="EduTech"
-                    type="number"
                     name="EduTech"
-                    min="0"
                     value={formData.EduTech}
                     onChange={handleInputChange}
                     required
-                  />
+                  >
+                    <option value="">Select Educational Technology</option>
+                    <option value="0">Category 0</option>
+                    <option value="1">Category 1</option>
+                  </select>
                 </div>
 
+                {/* Stress Level dropdown */}
                 <div className="form-group">
                   <label htmlFor="StressLevel">Stress Level</label>
-                  <input
+                  <select
                     id="StressLevel"
-                    type="number"
                     name="StressLevel"
-                    min="0"
                     value={formData.StressLevel}
                     onChange={handleInputChange}
                     required
-                  />
+                  >
+                    <option value="">Select Stress Level</option>
+                    <option value="0">Category 0</option>
+                    <option value="1">Category 1</option>
+                    <option value="2">Category 2</option>
+                  </select>
                 </div>
               </div>
 
@@ -404,9 +412,7 @@ function App() {
               <div className="result-card">
                 <div className="result-header">
                   <div>
-                    <span className="result-label">
-                      PREDICTION COMPLETE
-                    </span>
+                    <span className="result-label">PREDICTION COMPLETE</span>
                     <h3>Prediction Result</h3>
                   </div>
                   <span className="result-badge">Success</span>
@@ -431,15 +437,10 @@ function App() {
                             : numericProbability;
 
                         return (
-                          <div
-                            className="probability-row"
-                            key={grade}
-                          >
+                          <div className="probability-row" key={grade}>
                             <div className="probability-info">
                               <span>Grade {grade}</span>
-                              <strong>
-                                {percentage.toFixed(2)}%
-                              </strong>
+                              <strong>{percentage.toFixed(2)}%</strong>
                             </div>
 
                             <div className="probability-track">
@@ -448,14 +449,14 @@ function App() {
                                 style={{
                                   width: `${Math.min(
                                     100,
-                                    Math.max(0, percentage)
+                                    Math.max(0, percentage),
                                   )}%`,
                                 }}
                               />
                             </div>
                           </div>
                         );
-                      }
+                      },
                     )}
                   </div>
                 )}
@@ -470,31 +471,49 @@ function App() {
           </div>
         )}
 
+        {/* HISTORY */}
         {activeTab === "History" && (
-          <div className="stat-card">
-            <h3>Prediction History</h3>
+          <div className="history-card">
+            <div className="history-header">
+              <div>
+                <h3>Prediction History</h3>
+                <p>Review your previously saved predictions.</p>
+              </div>
+
+              <span className="history-count">
+                {loading ? "Loading..." : `${predictions.length} Records`}
+              </span>
+            </div>
 
             {loading ? (
-              <p>Loading history...</p>
+              <p className="history-message">Loading prediction history...</p>
             ) : error ? (
-              <p>{error}</p>
+              <p className="history-message error-message">{error}</p>
             ) : predictions.length === 0 ? (
-              <p>No prediction records found.</p>
+              <p className="history-message">No predictions found yet.</p>
             ) : (
               <div className="history-list">
-                {predictions.map((prediction) => (
+                {predictions.map((prediction, index) => (
                   <div className="history-item" key={prediction._id}>
-                    <div>
-                      <strong>
-                        Grade: {prediction.predictedGrade}
-                      </strong>
-                      <p>
+                    <div className="history-number">
+                      {predictions.length - index}
+                    </div>
+
+                    <div className="history-details">
+                      <span className="history-record-title">
+                        Student Prediction
+                      </span>
+
+                      <span className="history-date">
                         {prediction.createdAt
-                          ? new Date(
-                              prediction.createdAt
-                            ).toLocaleString()
+                          ? new Date(prediction.createdAt).toLocaleString()
                           : "Date unavailable"}
-                      </p>
+                      </span>
+                    </div>
+
+                    <div className="history-grade">
+                      <span>Predicted Grade</span>
+                      <strong>{prediction.predictedGrade}</strong>
                     </div>
                   </div>
                 ))}

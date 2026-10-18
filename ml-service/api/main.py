@@ -16,11 +16,11 @@ class StudentData(BaseModel):
     Discussions: int = Field(ge=0, le=1)
     Motivation: int = Field(ge=0, le=2)
     Age: int = Field(ge=18, le=29)
-    LearningStyle: int
+    LearningStyle: int = Field(ge=0, le=3)
     OnlineCourses: int = Field(ge=0, le=20)
     AssignmentCompletion: float = Field(ge=50, le=100)
-    EduTech: int
-    StressLevel: int
+    EduTech: int = Field(ge=0, le=1)
+    StressLevel: int = Field(ge=0, le=2)
 
 
 app = FastAPI(
