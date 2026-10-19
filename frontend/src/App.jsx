@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import "./App.css";
 
@@ -66,6 +65,9 @@ function getConfidence(probabilities) {
 function App() {
   const [activeTab, setActiveTab] = useState("Overview");
   const [predictions, setPredictions] = useState([]);
+  const [historySearch, setHistorySearch] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("all");
+  const [confidenceFilter, setConfidenceFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState(initialFormData);
@@ -100,6 +102,56 @@ function App() {
   }, []);
 
   const latestPrediction = predictions[0];
+
+  const filteredPredictions = predictions.filter((prediction) => {
+    // Search by Prediction ID and student input values
+    const searchText = historySearch.trim().toLowerCase();
+
+    const studentDataText = Object.entries(prediction.studentData || {})
+      .map(([key, value]) => `${key} ${value}`)
+      .join(" ")
+      .toLowerCase();
+
+    const predictionId = String(prediction._id || "").toLowerCase();
+
+    const matchesSearch =
+      !searchText ||
+      predictionId.includes(searchText) ||
+      studentDataText.includes(searchText) ||
+      String(prediction.predictedGrade).includes(searchText);
+
+    // Filter by predicted grade
+    const matchesGrade =
+      gradeFilter === "all" ||
+      String(prediction.predictedGrade) === gradeFilter;
+
+    // Filter by confidence level
+    const confidenceValues = Object.values(prediction.probabilities || {}).map(
+      (value) => {
+        const number = Number(value);
+        return number <= 1 ? number * 100 : number;
+      },
+    );
+
+    const confidence = confidenceValues.length
+      ? Math.max(...confidenceValues)
+      : null;
+
+    const confidenceLevel =
+      confidence === null
+        ? "unknown"
+        : confidence >= 80
+          ? "High"
+          : confidence >= 60
+            ? "Moderate"
+            : "Low";
+
+    const matchesConfidence =
+      confidenceFilter === "all" ||
+      confidenceLevel.toLowerCase() === confidenceFilter.toLowerCase();
+
+    return matchesSearch && matchesGrade && matchesConfidence;
+  });
 
   const getConfidenceColors = (level) => {
     if (level === "High") {
@@ -151,10 +203,7 @@ function App() {
     }
 
     const studentData = Object.fromEntries(
-      Object.entries(formData).map(([key, value]) => [
-        key,
-        Number(value),
-      ]),
+      Object.entries(formData).map(([key, value]) => [key, Number(value)]),
     );
 
     try {
@@ -199,17 +248,13 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Unable to load prediction details.",
-        );
+        throw new Error(data.message || "Unable to load prediction details.");
       }
 
       setSelectedPrediction(data);
     } catch (err) {
       console.error("Prediction details error:", err);
-      setDetailsError(
-        err.message || "Unable to load prediction details.",
-      );
+      setDetailsError(err.message || "Unable to load prediction details.");
     } finally {
       setDetailsLoading(false);
     }
@@ -251,9 +296,7 @@ function App() {
             Confidence
           </span>
 
-          <strong style={{ fontSize: "14px" }}>
-            {confidence.toFixed(2)}%
-          </strong>
+          <strong style={{ fontSize: "14px" }}>{confidence.toFixed(2)}%</strong>
 
           <span
             style={{
@@ -329,9 +372,7 @@ function App() {
             Highest class probability
           </span>
 
-          <strong style={{ fontSize: "20px" }}>
-            {confidence.toFixed(2)}%
-          </strong>
+          <strong style={{ fontSize: "20px" }}>{confidence.toFixed(2)}%</strong>
         </div>
 
         <div
@@ -618,9 +659,7 @@ function App() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="Discussions">
-                    Discussions Participation
-                  </label>
+                  <label htmlFor="Discussions">Discussions Participation</label>
                   <select
                     id="Discussions"
                     name="Discussions"
@@ -681,9 +720,7 @@ function App() {
               <div className="result-card">
                 <div className="result-header">
                   <div>
-                    <span className="result-label">
-                      PREDICTION COMPLETE
-                    </span>
+                    <span className="result-label">PREDICTION COMPLETE</span>
                     <h3>Prediction Result</h3>
                   </div>
                   <span className="result-badge">Success</span>
@@ -696,9 +733,7 @@ function App() {
                 </div>
 
                 {result.confidence !== undefined &&
-                  renderConfidence(
-                    result.probabilities,
-                  )}
+                  renderConfidence(result.probabilities)}
 
                 {result.probabilities && (
                   <div className="probability-section">
@@ -757,23 +792,73 @@ function App() {
               </div>
 
               <span className="history-count">
-                {loading ? "Loading..." : `${predictions.length} Records`}
+                {loading
+                  ? "Loading..."
+                  : `${filteredPredictions.length} of ${predictions.length} Records`}
               </span>
             </div>
 
+            {/* SEARCH AND FILTERS */}
+            <div className="history-filters">
+              <div className="history-filter-group history-search-group">
+                <label htmlFor="history-search">Search Predictions</label>
+                <input
+                  id="history-search"
+                  className="history-filter-control"
+                  type="search"
+                  placeholder="Search ID, study hours, attendance..."
+                  value={historySearch}
+                  onChange={(event) => setHistorySearch(event.target.value)}
+                />
+              </div>
+
+              <div className="history-filter-group">
+                <label htmlFor="history-grade-filter">Predicted Grade</label>
+                <select
+                  id="history-grade-filter"
+                  className="history-filter-control"
+                  value={gradeFilter}
+                  onChange={(event) => setGradeFilter(event.target.value)}
+                >
+                  <option value="all">All Grades</option>
+                  <option value="0">Grade 0</option>
+                  <option value="1">Grade 1</option>
+                  <option value="2">Grade 2</option>
+                  <option value="3">Grade 3</option>
+                </select>
+              </div>
+
+              <div className="history-filter-group">
+                <label htmlFor="history-confidence-filter">
+                  Prediction Confidence
+                </label>
+                <select
+                  id="history-confidence-filter"
+                  className="history-filter-control"
+                  value={confidenceFilter}
+                  onChange={(event) => setConfidenceFilter(event.target.value)}
+                >
+                  <option value="all">All Confidence Levels</option>
+                  <option value="High">High Confidence</option>
+                  <option value="Moderate">Moderate Confidence</option>
+                  <option value="Low">Low Confidence</option>
+                </select>
+              </div>
+            </div>
+
             {loading ? (
-              <p className="history-message">
-                Loading prediction history...
-              </p>
+              <p className="history-message">Loading prediction history...</p>
             ) : error ? (
               <p className="history-message error-message">{error}</p>
-            ) : predictions.length === 0 ? (
+            ) : filteredPredictions.length === 0 ? (
               <p className="history-message">
-                No predictions found yet.
+                {predictions.length === 0
+                  ? "No predictions found yet."
+                  : "No matching predictions found. Try another search or filter."}
               </p>
             ) : (
               <div className="history-list">
-                {predictions.map((prediction, index) => (
+                {filteredPredictions.map((prediction, index) => (
                   <div className="history-item" key={prediction._id}>
                     <div className="history-number">
                       {predictions.length - index}
@@ -786,9 +871,7 @@ function App() {
 
                       <span className="history-date">
                         {prediction.createdAt
-                          ? new Date(
-                              prediction.createdAt,
-                            ).toLocaleString()
+                          ? new Date(prediction.createdAt).toLocaleString()
                           : "Date unavailable"}
                       </span>
                     </div>
@@ -993,35 +1076,35 @@ function App() {
                         gap: "10px",
                       }}
                     >
-                      {Object.entries(
-                        selectedPrediction.studentData || {},
-                      ).map(([key, value]) => (
-                        <div
-                          key={key}
-                          style={{
-                            padding: "12px",
-                            background: "#f8fafc",
-                            border: "1px solid #e2e8f0",
-                            borderRadius: "9px",
-                            minWidth: 0,
-                            overflowWrap: "anywhere",
-                          }}
-                        >
+                      {Object.entries(selectedPrediction.studentData || {}).map(
+                        ([key, value]) => (
                           <div
+                            key={key}
                             style={{
-                              color: "#64748b",
-                              fontSize: "12px",
-                              marginBottom: "7px",
+                              padding: "12px",
+                              background: "#f8fafc",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "9px",
+                              minWidth: 0,
+                              overflowWrap: "anywhere",
                             }}
                           >
-                            {fieldLabels[key] || key}
-                          </div>
+                            <div
+                              style={{
+                                color: "#64748b",
+                                fontSize: "12px",
+                                marginBottom: "7px",
+                              }}
+                            >
+                              {fieldLabels[key] || key}
+                            </div>
 
-                          <strong style={{ fontSize: "14px" }}>
-                            {String(value)}
-                          </strong>
-                        </div>
-                      ))}
+                            <strong style={{ fontSize: "14px" }}>
+                              {String(value)}
+                            </strong>
+                          </div>
+                        ),
+                      )}
                     </div>
                   </section>
 
@@ -1045,60 +1128,57 @@ function App() {
                       {selectedPrediction.probabilities &&
                       Object.keys(selectedPrediction.probabilities).length >
                         0 ? (
-                        Object.entries(
-                          selectedPrediction.probabilities,
-                        ).map(([grade, probability]) => {
-                          const numericProbability = Number(probability);
-                          const percentage = Math.min(
-                            100,
-                            Math.max(
-                              0,
-                              numericProbability <= 1
-                                ? numericProbability * 100
-                                : numericProbability,
-                            ),
-                          );
+                        Object.entries(selectedPrediction.probabilities).map(
+                          ([grade, probability]) => {
+                            const numericProbability = Number(probability);
+                            const percentage = Math.min(
+                              100,
+                              Math.max(
+                                0,
+                                numericProbability <= 1
+                                  ? numericProbability * 100
+                                  : numericProbability,
+                              ),
+                            );
 
-                          return (
-                            <div
-                              key={grade}
-                              style={{ marginBottom: "18px" }}
-                            >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  gap: "10px",
-                                  marginBottom: "8px",
-                                  fontSize: "13px",
-                                }}
-                              >
-                                <span>Grade {grade}</span>
-                                <strong>
-                                  {formatProbability(probability)}
-                                </strong>
-                              </div>
-
-                              <div
-                                style={{
-                                  height: "8px",
-                                  background: "#e2e8f0",
-                                  borderRadius: "20px",
-                                  overflow: "hidden",
-                                }}
-                              >
+                            return (
+                              <div key={grade} style={{ marginBottom: "18px" }}>
                                 <div
                                   style={{
-                                    width: `${percentage}%`,
-                                    height: "100%",
-                                    background: "#4f46e5",
-                                    borderRadius: "20px",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    gap: "10px",
+                                    marginBottom: "8px",
+                                    fontSize: "13px",
                                   }}
-                                />
+                                >
+                                  <span>Grade {grade}</span>
+                                  <strong>
+                                    {formatProbability(probability)}
+                                  </strong>
+                                </div>
+
+                                <div
+                                  style={{
+                                    height: "8px",
+                                    background: "#e2e8f0",
+                                    borderRadius: "20px",
+                                    overflow: "hidden",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      width: `${percentage}%`,
+                                      height: "100%",
+                                      background: "#4f46e5",
+                                      borderRadius: "20px",
+                                    }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })
+                            );
+                          },
+                        )
                       ) : (
                         <p style={{ color: "#64748b", fontSize: "13px" }}>
                           Probability details are not available.
